@@ -1,66 +1,16 @@
-#include <boost/asio.hpp>
+#include <future>
 #include <iostream>
 
-#include "message.hpp"
-
-using boost::asio::ip::tcp;
-
-constexpr bool k_async_write{true};
-
-void write_handler(const boost::system::error_code& error, const std::size_t bytes_transferred)
-{
-    std::cout << error.what() << ", bytes transfered: " << bytes_transferred << std::endl;
-}
+#include "ServerConnection.hpp"
 
 int main()
 {
-    try
-    {
-        boost::system::error_code ec;
-        boost::asio::io_context io_context;
+    etex::ServerConnection server_connection;
+    auto fut = std::async(std::launch::async, &etex::ServerConnection::connect, &server_connection);
 
-        tcp::resolver resolver(io_context);
-        tcp::resolver::results_type endpoints = resolver.resolve(
-            etex::common::k_server_addr, std::to_string(etex::common::k_server_port), ec);
-        if (ec)
-        {
-            std::cerr << "Error: " << ec.what() << std::endl;
-            return ec.value();
-        }
+    server_connection.send_message("Test message to server\n");
 
-        tcp::socket socket(io_context);
-        boost::asio::connect(socket, endpoints, ec);
-        if (ec)
-        {
-            std::cerr << "Error: " << ec.what() << std::endl;
-            return ec.value();
-        }
-
-        const std::string msg{"Hello, bitches!\n"};
-
-        if (k_async_write)
-        {
-            socket.async_write_some(boost::asio::buffer(msg), &write_handler);
-            io_context.run();
-        }
-        else
-        {
-            const auto bytes_written = socket.write_some(boost::asio::buffer(msg), ec);
-            if (ec)
-            {
-                std::cerr << "Error: " << ec.what() << std::endl;
-                return ec.value();
-            }
-            else
-            {
-                std::cout << "Sent " << bytes_written << " bytes" << std::endl;
-            }
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-    }
+    fut.wait();
 
     return 0;
 }
