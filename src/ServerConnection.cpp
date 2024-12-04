@@ -2,8 +2,6 @@
 
 #include <iostream>
 
-#include "message.hpp"
-
 namespace etex
 {
 using boost::asio::ip::tcp;
@@ -46,7 +44,7 @@ ServerConnection::error_code ServerConnection::connect()
     return ec;
 }
 
-void ServerConnection::send_message(std::string&& msg)
+void ServerConnection::send_message(common::message&& msg)
 {
     m_send_msgs_queue.push(std::move(msg));
     (*m_timer).cancel();
@@ -54,13 +52,13 @@ void ServerConnection::send_message(std::string&& msg)
 
 boost::asio::awaitable<void> ServerConnection::read_message()
 {
-    std::array<char, 1024> buf;
     try
     {
         while ((*m_socket).is_open())
         {
-            const auto len = co_await (*m_socket).async_read_some(boost::asio::buffer(buf),
-                                                                  boost::asio::use_awaitable);
+            const auto len = co_await (*m_socket).async_read_some(
+                boost::asio::buffer(&m_received_msg_buffer, common::k_message_size),
+                boost::asio::use_awaitable);
             std::cout << "Received " << len << " bytes" << std::endl;
         }
     }
@@ -84,10 +82,12 @@ boost::asio::awaitable<void> ServerConnection::send_message()
             else
             {
                 co_await (*m_socket).async_write_some(
-                    boost::asio::buffer(m_send_msgs_queue.front()), boost::asio::deferred);
-                // co_await boost::asio::async_write(*m_socket,
-                //                                   boost::asio::buffer(m_send_msgs_queue.front()),
-                //                                   boost::asio::deferred);
+                    boost::asio::buffer(&m_send_msgs_queue.front(), common::k_message_size),
+                    boost::asio::deferred);
+                // co_await boost::asio::async_write(
+                //     *m_socket,
+                //     boost::asio::buffer(&m_send_msgs_queue.front(), common::k_message_size),
+                //     boost::asio::deferred);
                 m_send_msgs_queue.pop();
             }
         }
