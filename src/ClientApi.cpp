@@ -1,6 +1,9 @@
 #include "ClientApi.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <iostream>
+#include <magic_enum/magic_enum.hpp>
 
 #include "ServerConnection.hpp"
 
@@ -19,15 +22,13 @@ void ClientApi::join_service()
     m_server_connection.send_message(std::move(msg));
 }
 
-void ClientApi::send_message(common::message msg)
+void ClientApi::send_message(common::message&& msg)
 {
     m_server_connection.send_message(std::move(msg));
 }
 
 void ClientApi::receive_msg(common::message msg)
 {
-    std::cout << "ClientApi: received message: " << "Type: "
-              << static_cast<int>(msg.hdr.msg_type)  //<< "Data: " << msg.data
-              << std::endl;
+    spdlog::info("ClientApi: received message (Type: {})", magic_enum::enum_name(msg.hdr.msg_type));
 }
 }  // namespace etex

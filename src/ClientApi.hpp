@@ -15,7 +15,7 @@ class ClientApi
     ClientApi(ServerConnection& server_connection);
 
     void join_service();
-    void send_message(common::message msg);
+    void send_message(common::message&& msg);
 
     private:
     /**

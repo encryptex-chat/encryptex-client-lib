@@ -16,11 +16,11 @@ int main()
     client.join_service();
 
     // Add any debug messages here
-    // {
-    //     etex::common::message msg;
-    //     msg.hdr.msg_type = etex::common::message_type::connection_to_user_request;
-    //     client.send_message(msg);
-    // }
+    {
+        etex::common::message msg;
+        msg.hdr.msg_type = etex::common::message_type::connection_to_user_request;
+        client.send_message(std::move(msg));
+    }
 
     asio_thread.wait();
 
