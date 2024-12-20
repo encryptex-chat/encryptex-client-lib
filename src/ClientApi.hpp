@@ -14,9 +14,10 @@ class ClientApi
     ClientApi(ServerConnection& server_connection);
 
     void join_service();
-    void send_message(common::message&& msg);
+    void send_raw_message(common::message&& msg);
     void request_connect_to_user(const uint64_t user_id);
     void send_message_to_user(const uint64_t user_id, const std::string&& text_msg);
+    void respond_to_connection_request(const uint64_t user_id, const bool accept);
     [[nodiscard]] uint64_t get_my_id() const { return m_my_id; }
 
     void set_received_msg_processor(std::function<void(common::message&&)>&& msg_processor)

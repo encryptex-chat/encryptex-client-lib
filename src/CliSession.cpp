@@ -14,7 +14,7 @@ namespace etex
 CliSession::CliSession(ClientApi& client_api) : m_client_api(client_api)
 {
     m_client_api.set_received_msg_processor([this](common::message&& msg)
-                                            { this->print_received_msg(std::move(msg)); });
+                                            { this->process_received_msg(std::move(msg)); });
 }
 
 void CliSession::run()
@@ -29,6 +29,35 @@ void CliSession::run()
         {
             std::cout << "> ";
             std::getline(std::cin, input);
+
+            if (m_process_connection_request)
+            {
+                bool decided{false};
+                bool response;
+                while (!decided)
+                {
+                    if (input == "y")
+                    {
+                        response = true;
+                        decided  = true;
+                    }
+                    else if (input == "n")
+                    {
+                        response = false;
+                        decided  = true;
+                    }
+                    else
+                    {
+                        std::cout << "Unknown answer. Please write 'y' or 'n'"
+                                  << "\nAccept connection?(y/n) ";
+                        std::getline(std::cin, input);
+                    }
+                }
+                m_client_api.respond_to_connection_request(m_requested_user_id, response);
+                m_process_connection_request = false;
+                continue;
+            }
+
             if (input == "q")
             {
                 std::cout << "Session terminated" << std::endl;
@@ -46,7 +75,7 @@ void CliSession::run()
             if (str == "connect")
             {
                 stream >> str;
-                if (!std::all_of(str.begin(), str.end(), ::isdigit))
+                if (!std::ranges::all_of(str.begin(), str.end(), ::isdigit))
                 {
                     std::cout << "Invalid user ID" << std::endl;
                     continue;
@@ -57,7 +86,7 @@ void CliSession::run()
             else if (str == "send")
             {
                 stream >> str;
-                if (!std::all_of(str.begin(), str.end(), ::isdigit))
+                if (!std::ranges::all_of(str.begin(), str.end(), ::isdigit))
                 {
                     std::cout << "Invalid user ID" << std::endl;
                     continue;
@@ -92,7 +121,24 @@ void CliSession::run()
     }
 }
 
-void CliSession::print_received_msg(const common::message&& msg)
+void CliSession::process_received_msg(const common::message&& msg)
+{
+    std::cout << '\a';  // sound notification
+    switch (msg.hdr.msg_type)
+    {
+        case common::message_type::user_to_user_request:
+            m_process_connection_request = true;
+            m_requested_user_id          = msg.hdr.dst_id;
+            std::cout << "\nReceived connection request from user #" << m_requested_user_id
+                      << "\nAccept connection?(y/n) ";
+            std::cout.flush();
+            break;
+
+        default: print_received_msg(msg);
+    }
+}
+
+void CliSession::print_received_msg(const common::message& msg)
 {
     std::cout << "\nReceived message:\n"
               << "Type: " << magic_enum::enum_name(msg.hdr.msg_type) << '\n'

@@ -21,7 +21,7 @@ void ClientApi::join_service()
     m_server_connection.send_message(std::move(msg));
 }
 
-void ClientApi::send_message(common::message&& msg)
+void ClientApi::send_raw_message(common::message&& msg)
 {
     m_server_connection.send_message(std::move(msg));
 }
@@ -41,6 +41,15 @@ void ClientApi::send_message_to_user(const uint64_t user_id, const std::string&&
     msg.hdr.src_id   = m_my_id;
     msg.hdr.dst_id   = user_id;
     std::copy(text_msg.begin(), text_msg.end(), msg.data.begin());
+    m_server_connection.send_message(std::move(msg));
+}
+
+void ClientApi::respond_to_connection_request(const uint64_t user_id, const bool accept)
+{
+    common::message msg;
+    msg.hdr.msg_type = common::message_type::user_to_user_response;
+    msg.hdr.src_id   = m_my_id;
+    msg.hdr.dst_id   = user_id;
     m_server_connection.send_message(std::move(msg));
 }
 
